@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GAP - Reporte APP Taxis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root{ --blue:#1d4ed8; --blue-50:#eff6ff; --slate-50:#f8fafc; --slate-100:#f1f5f9; --slate-200:#e2e8f0; --slate-600:#475569; }
+    html,body{margin:0;padding:0;font-family:"Inter",system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--slate-50);color:#0f172a}
+    .wrap{max-width:1200px;margin:0 auto;padding:24px}
+    .header{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--slate-200);z-index:20}
+    .title{font-weight:900;font-size:28px;color:#0f172a}
+    .subtitle{color:var(--slate-600);margin-top:4px}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}
+    .tab{border:1px solid var(--slate-200);background:#fff;color:#0f172a;padding:10px 14px;border-radius:999px;font-weight:700;cursor:pointer}
+    .tab.active{background:var(--blue-50);border-color:var(--blue);color:var(--blue)}
+    .panel{display:none;margin-top:16px}
+    .panel.active{display:block}
+    .grid{display:grid;gap:16px}
+    .g-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .g-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    @media(max-width:900px){.g-2,.g-3{grid-template-columns:1fr}}
+    .card{background:#fff;border:1px solid var(--slate-200);border-radius:16px;padding:16px}
+    .card h3{margin:0 0 8px 0;font-size:18px;font-weight:800}
+    .kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-top:16px}
+    @media(max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    .kpi{background:#fff;border:1px solid var(--slate-200);border-radius:16px;padding:14px}
+    .kpi .lbl{color:var(--slate-600);font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px}
+    .kpi .val{font-weight:900;font-size:26px;margin-top:4px}
+    .select-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:16px}
+    .select{padding:10px 12px;border-radius:12px;border:1px solid var(--slate-200);background:#fff;font-weight:700}
+    .badge{font-size:12px;font-weight:800;color:var(--blue);background:var(--blue-50);padding:4px 8px;border-radius:999px}
+    .note{font-size:12px;color:var(--slate-600)}
+    .explain{border:1px dashed var(--slate-200);background:var(--slate-100);padding:12px;border-radius:12px;font-size:14px}
+    .li{display:flex;gap:10px;align-items:flex-start}
+    .li svg{flex:0 0 18px;margin-top:2px}
+    .insights h2{font-weight:900;margin:0 0 12px}
+    .list{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+    .tag{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--blue-50);color:var(--blue);font-weight:800;font-size:12px;margin-left:6px}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="wrap">
+      <div class="title">GAP – Reporte APP Taxis</div>
+      <div class="subtitle">Reporte Corporativo Basado en Datos Mensuales</div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <!-- Mes y KPIs -->
+    <div class="select-row">
+      <label for="monthSel"><strong>Mes de análisis:</strong></label>
+      <select id="monthSel" class="select"></select>
+      <span class="badge">Periodo: Sep 2025 – Mar 2026</span>
+    </div>
+
+    <div id="kpis" class="kpis" aria-live="polite"></div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-t="reservas">Reservas</button>
+      <button class="tab" data-t="transacciones">Transacciones</button>
+      <button class="tab" data-t="experiencia">Experiencias</button>
+      <button class="tab" data-t="ingresos">Ingresos GAP</button>
+      <button class="tab" data-t="insights">★ Insights Clave</button>
+    </div>
+
+    <!-- Panels -->
+    <section id="p-reservas" class="panel active">
+      <div class="grid g-3">
+        <div class="card">
+          <h3>Tendencia de Reservas (Sep 2025 → Mar 2026)</h3>
+          <canvas id="chReservas"></canvas>
+        </div>
+        <div class="card">
+          <h3>% de Reservas Anticipadas</h3>
+          <canvas id="chAnticipadas"></canvas>
+        </div>
+        <div class="card">
+          <h3>Descargas por Tienda</h3>
+          <canvas id="chStores"></canvas>
+        </div>
+      </div>
+      <div class="explain" id="explain-reservas"></div>
+    </section>
+
+    <section id="p-transacciones" class="panel">
+      <div class="grid g-3">
+        <div class="card"><h3>Split de Pagos (Cash vs Tarjeta)</h3><canvas id="chSplit"></canvas></div>
+        <div class="card"><h3>Descargas Acumuladas</h3><canvas id="chDescAcum"></canvas></div>
+        <div class="card"><h3>Reservas vs Descargas</h3><canvas id="chRvD"></canvas><div class="note" id="ratioTxt" style="margin-top:6px"></div></div>
+      </div>
+      <div class="explain" id="explain-transacciones"></div>
+    </section>
+
+    <section id="p-experiencia" class="panel">
+      <div class="grid g-2">
+        <div class="card"><h3>Puntualidad (≥96% meta)</h3><canvas id="chPunt"></canvas></div>
+        <div class="card"><h3>Tiempo de Espera (min)</h3><canvas id="chEspera"></canvas></div>
+      </div>
+      <div class="explain" id="explain-experiencia"></div>
+    </section>
+
+    <section id="p-ingresos" class="panel">
+      <div class="card"><h3>Ingresos de GAP por mes (Fee tecnológico $3 MXN / viaje)</h3><canvas id="chGAP"></canvas></div>
+      <div class="explain" id="explain-ingresos"></div>
+    </section>
+
+    <section id="p-insights" class="panel">
+      <div class="card insights">
+        <h2>★ Insights Clave del periodo</h2>
+        <ul class="list" id="insightsList"></ul>
+        <h2 style="margin-top:16px">Oportunidades / Riesgos</h2>
+        <ul class="list" id="oppList"></ul>
+        <h2 style="margin-top:16px">Recomendaciones estratégicas</h2>
+        <ul class="list" id="recList"></ul>
+        <p class="note" style="margin-top:12px">*Datos simulados para demostración. Fuentes reales: panel GAP, tiendas (Google/Apple), pasarela de pagos.</p>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // ====== Datos Base ======
+    const meses = ["Sep 2025","Oct 2025","Nov 2025","Dic 2025","Ene 2026","Feb 2026","Mar 2026"];
+    // Viajes = reservas confirmadas (referencia operativa)
+    const reservas = [30000,38000,46000,55000,65000,80000,95000];
+    const descargasMes = [4000,6000,9000,12000,15000,18000,22000]; // ratio razonable vs reservas
+    const descAndroidPct = 0.65; // reparto tiendas
+    const anticipadasPct = [30,32,35,38,40,42,43];
+    const puntualidad = [95,95.2,95.8,96.5,96.7,97.0,97.2];
+    const espera = [14,12,11,10,9,8,7];
+    const splitCashPct = [55,54,53,52,50,49,48]; // tendencia hacia tarjeta
+
+    // Precalculos
+    const descAcum = descargasMes.map((v,i)=> descargasMes.slice(0,i+1).reduce((a,b)=>a+b,0));
+
+    // ====== UI Helpers ======
+    const fmt = n => n.toLocaleString('es-MX');
+    const percent = v => `${v.toFixed(1)}%`;
+
+    const monthSel = document.getElementById('monthSel');
+    meses.forEach((m,i)=>{const o=document.createElement('option');o.value=i;o.textContent=m;monthSel.appendChild(o)});
+    monthSel.value = 3; // Dic 2025 por defecto
+
+    const kpisDiv = document.getElementById('kpis');
+    function renderKPIs(idx){
+      const kpi = (label,val,color="#0f172a")=>`<div class="kpi"><div class="lbl">${label}</div><div class="val" style="color:${color}">${val}</div></div>`;
+      const dMes = descargasMes[idx];
+      const resMes = reservas[idx];
+      const ant = anticipadasPct[idx];
+      const punt = puntualidad[idx];
+      const esp = espera[idx];
+      kpisDiv.innerHTML = [
+        kpi('Descargas',fmt(dMes), '#1d4ed8'),
+        kpi('Reservas',fmt(resMes), '#1d4ed8'),
+        kpi('Espera Promedio',`${esp} min`, '#1d4ed8'),
+        kpi('Puntualidad',percent(punt), '#1d4ed8'),
+        kpi('% Reservas anticipadas',percent(ant), '#1d4ed8')
+      ].join('');
+    }
+
+    renderKPIs(+monthSel.value);
+    monthSel.addEventListener('change',()=>{renderKPIs(+monthSel.value);updateExplainers();updateRatioText();renderInsights(+monthSel.value);});
+
+    // ====== Tabs ======
+    document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',e=>{
+      document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+      e.currentTarget.classList.add('active');
+      const t=e.currentTarget.dataset.t;
+      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+      document.getElementById('p-'+t).classList.add('active');
+    }));
+
+    // ====== Charts ======
+    const gridColor = 'rgba(148,163,184,.35)';
+    function axes(){return {x:{grid:{color:gridColor}},y:{grid:{color:gridColor}}}};
+
+    const chReservas = new Chart(document.getElementById('chReservas'),{
+      type:'line',data:{labels:meses,datasets:[{label:'Reservas',data:reservas,borderColor:'#1d4ed8',backgroundColor:'rgba(29,78,216,.1)',tension:.3,fill:true}]},options:{responsive:true,scales:axes(),plugins:{legend:{display:false}}}
+    });
+
+    const chAnticipadas = new Chart(document.getElementById('chAnticipadas'),{
+      type:'doughnut',data:{labels:['Anticipadas','Resto'],datasets:[{data:[anticipadasPct[3],100-anticipadasPct[3]],backgroundColor:['#1d4ed8','#e2e8f0'],borderWidth:0}]},options:{plugins:{legend:{position:'bottom'}}}
+    });
+
+    const storesAndroid = descargasMes.map(v=>Math.round(v*descAndroidPct));
+    const storesIOS = descargasMes.map((v,i)=>v-storesAndroid[i]);
+    const chStores = new Chart(document.getElementById('chStores'),{
+      type:'bar',data:{labels:meses,datasets:[{label:'Android',data:storesAndroid,backgroundColor:'#1d4ed8'},{label:'iOS',data:storesIOS,backgroundColor:'#60a5fa'}]},options:{responsive:true,scales:axes()}}
+    );
+
+    const chSplit = new Chart(document.getElementById('chSplit'),{
+      type:'pie',data:{labels:['Efectivo','Tarjeta'],datasets:[{data:[splitCashPct[3],100-splitCashPct[3]],backgroundColor:['#f59e0b','#1d4ed8'],borderWidth:0}]},options:{plugins:{legend:{position:'bottom'}}}
+    });
+
+    const chDescAcum = new Chart(document.getElementById('chDescAcum'),{
+      type:'bar',data:{labels:meses,datasets:[{label:'Acumulado',data:descAcum,backgroundColor:'#1d4ed8'}]},options:{scales:axes(),plugins:{legend:{display:false}}}
+    });
+
+    const chRvD = new Chart(document.getElementById('chRvD'),{
+      type:'line',data:{labels:meses,datasets:[{label:'Reservas',data:reservas,borderColor:'#1d4ed8',backgroundColor:'rgba(29,78,216,.08)',fill:true,tension:.3},{label:'Descargas',data:descargasMes,borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,.12)',fill:true,tension:.3}]},options:{scales:axes()}}
+    );
+
+    const chPunt = new Chart(document.getElementById('chPunt'),{
+      type:'line',data:{labels:meses,datasets:[{label:'Puntualidad %',data:puntualidad,borderColor:'#059669',backgroundColor:'rgba(5,150,105,.1)',tension:.3,fill:true}]},options:{scales:axes(),plugins:{legend:{display:false}},suggestedMax:100}
+    });
+    const chEspera = new Chart(document.getElementById('chEspera'),{
+      type:'bar',data:{labels:meses,datasets:[{label:'Espera (min)',data:espera,backgroundColor:'#0ea5e9'}]},options:{scales:axes(),plugins:{legend:{display:false}}}
+    });
+
+    const gapIngresos = reservas.map(v=>v*3); // $3 MXN por viaje
+    const chGAP = new Chart(document.getElementById('chGAP'),{
+      type:'bar',data:{labels:meses,datasets:[{label:'Ingresos GAP (MXN)',data:gapIngresos,backgroundColor:'#eab308'}]},options:{scales:axes()}}
+    );
+
+    // ====== Explanations ======
+    function updateExplainers(){
+      const i = +monthSel.value;
+      // Reservas
+      const resMes = reservas[i];
+      const ant = anticipadasPct[i];
+      const dMes = descargasMes[i];
+      const and = storesAndroid[i];
+      const ios = storesIOS[i];
+      document.getElementById('explain-reservas').innerHTML = `
+        <div class="li"><div><strong>Tendencia al alza:</strong> las reservas pasan de <strong>${fmt(reservas[0])}</strong> en Sep‑25 a <strong>${fmt(reservas[reservas.length-1])}</strong> en Mar‑26, reflejando adopción sostenida.</div></div>
+        <div class="li"><div><strong>${percent(ant)}</strong> de reservas del mes son <strong>anticipadas</strong>, lo que permite planificar mejor la operación.</div></div>
+        <div class="li"><div>En <strong>${meses[i]}</strong> hubo <strong>${fmt(dMes)}</strong> descargas (Android: <strong>${fmt(and)}</strong>, iOS: <strong>${fmt(ios)}</strong>), impulsando el embudo de usuarios.</div></div>
+      `;
+      // Transacciones
+      const ratio = (resMes / Math.max(1,dMes)).toFixed(2);
+      const cash = splitCashPct[i];
+      document.getElementById('ratioTxt').textContent = `Ratio actual: ${ratio} reservas por descarga en ${meses[i]}.`;
+      document.getElementById('explain-transacciones').innerHTML = `
+        <div class="li"><div>El <strong>${100-cash}%</strong> de los pagos se procesa con <strong>tarjeta</strong>; la tendencia crece mes a mes, elevando la trazabilidad.</div></div>
+        <div class="li"><div>Las <strong>descargas acumuladas</strong> alcanzan <strong>${fmt(descAcum[i])}</strong> usuarios; la base instalada sostiene el crecimiento de reservas.</div></div>
+        <div class="li"><div>La relación <em>reservas vs. descargas</em> se mantiene saludable (<strong>${ratio}x</strong>), señal de conversión efectiva del embudo.</div></div>
+      `;
+      // Experiencia
+      document.getElementById('explain-experiencia').innerHTML = `
+        <div class="li"><div><strong>Puntualidad ${percent(puntualidad[i])}</strong> (meta ≥96%). La mejora es consistente desde Sep‑25.</div></div>
+        <div class="li"><div><strong>Espera promedio ${espera[i]} min</strong>, con tendencia a la baja; refleja mejor despacho y cobertura.</div></div>
+      `;
+      // Ingresos
+      document.getElementById('explain-ingresos').innerHTML = `
+        <div class="li"><div>Con <strong>${fmt(resMes)}</strong> viajes en ${meses[i]}, el ingreso para GAP por fee tecnológico es de <strong>$${fmt(resMes*3)}</strong> MXN.</div></div>
+        <div class="li"><div>El crecimiento mensual de viajes se traduce directamente en ingresos recurrentes y predecibles.</div></div>
+      `;
+    }
+    function updateRatioText(){
+      const i = +monthSel.value; const r = (reservas[i]/Math.max(1,descargasMes[i])).toFixed(2);
+      document.getElementById('ratioTxt').textContent = `Ratio actual: ${r} reservas por descarga en ${meses[i]}.`;
+    }
+    updateExplainers(); updateRatioText();
+
+    // ====== Insights (dinámicos por mes) ======
+    function renderInsights(i){
+      const insightsList = document.getElementById('insightsList');
+      const oppList = document.getElementById('oppList');
+      const recList = document.getElementById('recList');
+
+      const ico = {
+        chart: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>',
+        download: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+        check: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+        clock: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+        calendar: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+        alert: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+        card: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>',
+        rocket: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5L3 21l4.5-1.5L17 10a3 3 0 1 0-4.24-4.24L3.26 15.26"/></svg>',
+        target: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>',
+        lab: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v6l-4 7a4 4 0 0 0 4 4h12a4 4 0 0 0 4-4l-4-7V2"/></svg>'
+      };
+
+      const growthRes = i>0 ? reservas[i]-reservas[i-1] : 0;
+      const growthDesc = i>0 ? descargasMes[i]-descargasMes[i-1] : 0;
+      const ratio = reservas[i]/Math.max(1,descargasMes[i]);
+      const esperaDown = i>0 ? (espera[i] < espera[i-1]) : false;
+      const puntualOK = puntualidad[i] >= 96;
+
+      const insights = [
+        `${ico.chart}<div>Reservas del mes: <strong>${fmt(reservas[i])}</strong> en ${meses[i]} (${growthRes>=0?'+':''}${fmt(growthRes)} vs. mes previo).</div>`,
+        `${ico.download}<div>Descargas del mes: <strong>${fmt(descargasMes[i])}</strong>; base instalada <strong>${fmt(descAcum[i])}</strong>.</div>`,
+        `${ico.check}<div>Puntualidad: <strong>${percent(puntualidad[i])}</strong> ${puntualOK? '(en meta)':'(por debajo de meta)'}.</div>`,
+        `${ico.clock}<div>Espera promedio: <strong>${espera[i]} min</strong> ${esperaDown? '(mejora)':'(estable/sube)'}.</div>`,
+        `${ico.calendar}<div>Reservas anticipadas: <strong>${percent(anticipadasPct[i])}</strong> del total del mes.</div>`
+      ];
+      insightsList.innerHTML = insights.map(t=>`<li class="li">${t}</li>`).join('');
+
+      const opp = [];
+      if (anticipadasPct[i] < 40) opp.push(`${ico.rocket}<div>Oportunidad: elevar pre‑reservas (meta 45‑50%) para suavizar picos operativos.</div>`);
+      if (!puntualOK) opp.push(`${ico.alert}<div>Riesgo: puntualidad por debajo de 96%; revisar causas (congestionamiento, gaps de cobertura).</div>`);
+      if (espera[i] > 10) opp.push(`${ico.alert}<div>Riesgo: espera alta (${espera[i]} min); priorizar despacho y posicionamiento en horas pico.</div>`);
+      if (growthDesc > 0 && ratio < 4) opp.push(`${ico.target}<div>Oportunidad: más activaciones in‑app para convertir nuevas descargas en reservas.</div>`);
+      oppList.innerHTML = opp.slice(0,3).map(t=>`<li class="li">${t}</li>`).join('');
+
+      const rec = [];
+      if (anticipadasPct[i] < 45) rec.push(`${ico.calendar}<div>Lanzar campaña «Reserva y gana» y beneficio de tarifa preferencial para reservas ≥24h.</div>`);
+      if (espera[i] > 9) rec.push(`${ico.target}<div>Implementar heatmaps y buffers operativos en llegadas críticas; meta: bajar a ${Math.max(7, espera[i]-2)} min.</div>`);
+      if (splitCashPct[i] > 52) rec.push(`${ico.card}<div>Incentivar pago con tarjeta (cashback 2%) para mejorar trazabilidad y seguridad.</div>`);
+      if (ratio < 3.5) rec.push(`${ico.rocket}<div>Flujo de onboarding (QR en salas / pantallas) para activar nuevas descargas en su primer viaje.</div>`);
+      if (growthRes < 0) rec.push(`${ico.lab}<div>Prueba A/B de precios por zonas fijas y retornos para reactivar demanda.</div>`);
+      recList.innerHTML = rec.slice(0,5).map(t=>`<li class="li">${t}</li>`).join('');
+    }
+    renderInsights(+monthSel.value);
+  </script>
+</body>
+</html>
